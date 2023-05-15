@@ -24,3 +24,12 @@ arrow-*.tar
 
 # Temporary files, for example, from tests.
 /tmp/
+
+# macOS
+.DS_Store
+
+# IDE
+.vscode
+
+# checksum file
+checksum.exs
