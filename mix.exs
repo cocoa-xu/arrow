@@ -32,6 +32,9 @@ defmodule Arrow.MixProject do
       {:cc_precompiler, "~> 0.1.0"},
       {:elixir_make, "~> 0.7.0"},
 
+      # demo
+      {:c_func_in_nif, "~> 0.1", github: "cocoa-xu/c_func_in_nif"},
+
       # docs
       {:ex_doc, "~> 0.29", only: :docs, runtime: false}
     ]

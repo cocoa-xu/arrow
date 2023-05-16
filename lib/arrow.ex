@@ -17,4 +17,9 @@ defmodule Arrow do
   def to_arrow_c_data(data) do
     Arrow.Nif.arrow_to_arrow_c_data(data)
   end
+
+  @spec invoke_my_add(integer(), integer()) :: integer()
+  def invoke_my_add(a, b) do
+    Arrow.Nif.arrow_invoke_invoke_my_add(CFunc.pointer_to_my_add(), a, b)
+  end
 end

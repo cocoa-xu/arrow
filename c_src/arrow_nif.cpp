@@ -384,6 +384,27 @@ static ERL_NIF_TERM arrow_to_arrow_c_data(ErlNifEnv *env, int argc, const ERL_NI
   );
 }
 
+static ERL_NIF_TERM arrow_invoke_invoke_my_add(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
+  uint64_t ptr_u64;
+  if (!erlang::nif::get(env, argv[0], &ptr_u64)) {
+    return enif_make_badarg(env);
+  }
+  if (ptr_u64 == 0) return enif_make_badarg(env);
+
+  int a, b;
+  if (!erlang::nif::get(env, argv[1], &a)) {
+    return enif_make_badarg(env);
+  }
+  if (!erlang::nif::get(env, argv[2], &b)) {
+    return enif_make_badarg(env);
+  }
+
+  int(*my_add)(int, int) = nullptr;
+  my_add = reinterpret_cast<decltype(my_add)>(ptr_u64);
+  int result = my_add(a, b);
+  return enif_make_int64(env, result);
+}
+
 static int on_load(ErlNifEnv *env, void **, ERL_NIF_TERM) {
   ErlNifResourceType *rt;
 
@@ -405,7 +426,8 @@ static int on_upgrade(ErlNifEnv *, void **, void **, ERL_NIF_TERM) {
 static ErlNifFunc nif_functions[] = {
   {"arrow_int64_example", 0, arrow_int64_example, 0},
   {"arrow_utf8_example", 0, arrow_utf8_example, 0},
-  {"arrow_to_arrow_c_data", 1, arrow_to_arrow_c_data, ERL_NIF_DIRTY_JOB_CPU_BOUND}
+  {"arrow_to_arrow_c_data", 1, arrow_to_arrow_c_data, ERL_NIF_DIRTY_JOB_CPU_BOUND},
+  {"arrow_invoke_invoke_my_add", 3, arrow_invoke_invoke_my_add, 0}
 };
 
 ERL_NIF_INIT(Elixir.Arrow.Nif, nif_functions, on_load, on_reload, on_upgrade, NULL);
