@@ -34,6 +34,7 @@ defmodule Arrow.MixProject do
 
       # demo
       {:c_func_in_nif, "~> 0.1", github: "cocoa-xu/c_func_in_nif"},
+      {:rust_c_fn, "~> 0.1", github: "cocoa-xu/rust_c_fn"},
 
       # docs
       {:ex_doc, "~> 0.29", only: :docs, runtime: false}

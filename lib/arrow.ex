@@ -22,4 +22,17 @@ defmodule Arrow do
   def invoke_my_add(a, b) do
     Arrow.Nif.arrow_invoke_invoke_my_add(CFunc.pointer_to_my_add(), a, b)
   end
+
+  @spec invoke_my_op(:add | :subtract | :multiply | :divide, integer(), integer()) :: integer()
+  def invoke_my_op(mode, a, b) when mode == :add or mode == :subtract or mode == :multiply or mode == :divide do
+    s = CFunc.new_struct(mode, a, b)
+    result = Arrow.Nif.arrow_invoke_invoke_my_op(CFunc.pointer_to_my_op(), s)
+    CFunc.free_struct(s)
+    result
+  end
+
+  @spec invoke_my_add_rs(integer(), integer()) :: integer()
+  def invoke_my_add_rs(a, b) do
+    Arrow.Nif.arrow_invoke_invoke_my_add(RustNIF.pointer_to_my_add_rs(), a, b)
+  end
 end
