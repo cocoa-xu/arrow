@@ -401,90 +401,52 @@ static ERL_NIF_TERM arrow_execute_query_example(ErlNifEnv *env, int argc, const 
   }
   if (ptr_u64 == 0) return enif_make_badarg(env);
 
-  uint64_t struct_ptr_u64;
-  if (!erlang::nif::get(env, argv[1], &struct_ptr_u64)) {
+  uint64_t stmt_ptr_u64;
+  if (!erlang::nif::get(env, argv[1], &stmt_ptr_u64)) {
     return enif_make_badarg(env);
   }
-  if (struct_ptr_u64 == 0) return enif_make_badarg(env);
+  if (stmt_ptr_u64 == 0) return enif_make_badarg(env);
+
+  uint64_t array_stream_ptr_u64;
+  if (!erlang::nif::get(env, argv[2], &array_stream_ptr_u64)) {
+    return enif_make_badarg(env);
+  }
+  if (array_stream_ptr_u64 == 0) return enif_make_badarg(env);
 
   uint64_t error_ptr_u64;
-  if (!erlang::nif::get(env, argv[2], &error_ptr_u64)) {
+  if (!erlang::nif::get(env, argv[3], &error_ptr_u64)) {
     return enif_make_badarg(env);
   }
   if (error_ptr_u64 == 0) return enif_make_badarg(env);
 
-  AdbcStatusCode(*remote_AdbcStatementExecuteQuery)(void *, struct ArrowArrayStream *, int64_t*, void *) = nullptr;
+  AdbcStatusCode(*remote_AdbcStatementExecuteQuery)(void *, void *, int64_t*, void *) = nullptr;
   remote_AdbcStatementExecuteQuery = reinterpret_cast<decltype(remote_AdbcStatementExecuteQuery)>(ptr_u64);
-  
-  ErlNifBinary outbin;
-  if (!enif_alloc_binary(sizeof(struct ArrowArrayStream), &outbin)) {
-    return erlang::nif::error(env, "out of memory");
-  }
-  struct ArrowArrayStream * out = (struct ArrowArrayStream *)outbin.data;
-  memset(out, 0, sizeof(struct ArrowArrayStream));
   
   int64_t rows_affected;
 
   struct AdbcError * adbc_error = (struct AdbcError *)(uint64_t *)error_ptr_u64;
   memset(adbc_error, 0, sizeof(struct AdbcError));
 
-  AdbcStatusCode code = remote_AdbcStatementExecuteQuery((void *)(uint64_t *)struct_ptr_u64, out, &rows_affected, adbc_error);
+  AdbcStatusCode code = remote_AdbcStatementExecuteQuery(
+    (void *)(uint64_t *)stmt_ptr_u64, 
+    (void *)(uint64_t *)array_stream_ptr_u64, 
+    &rows_affected,
+    adbc_error
+  );
   if (code != ADBC_STATUS_OK) {
     ret = nif_error_from_adbc_error(env, adbc_error);
-    enif_release_binary(&outbin);
     if (adbc_error->release != nullptr) {
       adbc_error->release(adbc_error);
     }
     return ret;
   }
 
-  ret = enif_make_binary(env, &outbin);
   return enif_make_tuple3(env,
     erlang::nif::ok(env),
-    ret, 
+    argv[2],
     enif_make_int64(env, rows_affected)
   );
 }
-
-// static ERL_NIF_TERM arrow_invoke_invoke_my_add(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
-  // uint64_t ptr_u64;
-  // if (!erlang::nif::get(env, argv[0], &ptr_u64)) {
-  //   return enif_make_badarg(env);
-  // }
-  // if (ptr_u64 == 0) return enif_make_badarg(env);
-
-//   int a, b;
-//   if (!erlang::nif::get(env, argv[1], &a)) {
-//     return enif_make_badarg(env);
-//   }
-//   if (!erlang::nif::get(env, argv[2], &b)) {
-//     return enif_make_badarg(env);
-//   }
-
-//   int(*my_add)(int, int) = nullptr;
-//   my_add = reinterpret_cast<decltype(my_add)>(ptr_u64);
-//   int result = my_add(a, b);
-//   return enif_make_int64(env, result);
-// }
-
-// static ERL_NIF_TERM arrow_invoke_invoke_my_op(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
-//   uint64_t func_ptr_u64;
-//   if (!erlang::nif::get(env, argv[0], &func_ptr_u64)) {
-//     return enif_make_badarg(env);
-//   }
-//   if (func_ptr_u64 == 0) return enif_make_badarg(env);
-
-  // uint64_t struct_ptr_u64;
-  // if (!erlang::nif::get(env, argv[1], &struct_ptr_u64)) {
-  //   return enif_make_badarg(env);
-  // }
-  // if (struct_ptr_u64 == 0) return enif_make_badarg(env);
-
-//   int(*my_op)(void *) = nullptr;
-//   my_op = reinterpret_cast<decltype(my_op)>(func_ptr_u64);
-//   int result = my_op((void *)(uint64_t *)struct_ptr_u64);
-//   return enif_make_int64(env, result);
-// }
 
 static int on_load(ErlNifEnv *env, void **, ERL_NIF_TERM) {
   ErlNifResourceType *rt;
@@ -505,12 +467,7 @@ static int on_upgrade(ErlNifEnv *, void **, void **, ERL_NIF_TERM) {
 }
 
 static ErlNifFunc nif_functions[] = {
-  {"arrow_execute_query_example", 4, arrow_execute_query_example, 0}
-  // {"arrow_int64_example", 0, arrow_int64_example, 0},
-  // {"arrow_utf8_example", 0, arrow_utf8_example, 0},
-  // {"arrow_to_arrow_c_data", 1, arrow_to_arrow_c_data, ERL_NIF_DIRTY_JOB_CPU_BOUND},
-  // {"arrow_invoke_invoke_my_add", 3, arrow_invoke_invoke_my_add, 0},
-  // {"arrow_invoke_invoke_my_op", 2, arrow_invoke_invoke_my_op, 0}
+  {"arrow_execute_query_example", 5, arrow_execute_query_example, 0}
 };
 
 ERL_NIF_INIT(Elixir.Arrow.Nif, nif_functions, on_load, on_reload, on_upgrade, NULL);

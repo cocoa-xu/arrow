@@ -6,6 +6,7 @@ defmodule Arrow do
   alias Adbc.Database
   alias Adbc.Connection
   alias Adbc.Statement
+  alias Adbc.ArrowArrayStream
 
   @spec adbc_example :: {:ok, reference()} | {:error, String.t()}
   def adbc_example() do
@@ -23,25 +24,34 @@ defmodule Arrow do
     :ok = Statement.prepare(statement)
     statement_ptr = Adbc.Statement.get_pointer(statement)
 
-    error = Adbc.Error.new()
+    {:ok, error} = Adbc.Error.new()
+    {:ok, array_stream} = ArrowArrayStream.new()
+    array_stream_ptr = array_stream.pointer
 
-    Arrow.Nif.arrow_execute_query_example(
-      func_ptr,
-      statement_ptr,
-      error.pointer,
-      {statement.reference, error.reference}
-    )
+    {:ok, ^array_stream_ptr, _rows_affected} =
+      Arrow.Nif.arrow_execute_query_example(
+        func_ptr,
+        statement_ptr,
+        array_stream_ptr,
+        error.pointer,
+        {statement.reference, error.reference, array_stream.reference}
+      )
 
     Statement.set_sql_query(statement, "INSERT INTO foo VALUES (#{:rand.uniform(1000)})")
     :ok = Statement.prepare(statement)
     statement_ptr = Adbc.Statement.get_pointer(statement)
 
-    Arrow.Nif.arrow_execute_query_example(
-      func_ptr,
-      statement_ptr,
-      error.pointer,
-      {statement.reference, error.reference}
-    )
+    :ok = Adbc.Error.reset(error)
+    {:ok, ^array_stream_ptr, rows_affected} =
+      Arrow.Nif.arrow_execute_query_example(
+        func_ptr,
+        statement_ptr,
+        array_stream_ptr,
+        error.pointer,
+        {statement.reference, error.reference}
+      )
+
+    {array_stream, rows_affected}
   end
 
   # @spec int64_example :: {:ok, reference()} | {:error, String.t()}
