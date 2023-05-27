@@ -25,13 +25,23 @@ defmodule Arrow do
 
     error = Adbc.Error.new()
 
-    Arrow.Nif.arrow_execute_query_example(func_ptr, statement_ptr, error.pointer, {statement.reference, error.reference})
+    Arrow.Nif.arrow_execute_query_example(
+      func_ptr,
+      statement_ptr,
+      error.pointer,
+      {statement.reference, error.reference}
+    )
 
     Statement.set_sql_query(statement, "INSERT INTO foo VALUES (#{:rand.uniform(1000)})")
     :ok = Statement.prepare(statement)
     statement_ptr = Adbc.Statement.get_pointer(statement)
 
-    Arrow.Nif.arrow_execute_query_example(func_ptr, statement_ptr, error.pointer, {statement.reference, error.reference})
+    Arrow.Nif.arrow_execute_query_example(
+      func_ptr,
+      statement_ptr,
+      error.pointer,
+      {statement.reference, error.reference}
+    )
   end
 
   # @spec int64_example :: {:ok, reference()} | {:error, String.t()}
