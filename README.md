@@ -2,15 +2,13 @@
 
 ## Example
 ```elixir
-iex> {:ok, r} = Arrow.int64_example
-{:ok, #Reference<0.888448222.4180541443.5227>}   
-iex> Arrow.to_arrow_c_data(r)
+# this demo will create an SQLite3 file, my_db.db
+# create a table if not exists foo (col)
+# insert a random number between 0 and 1000 to the table
+iex> {:ok, _arrow_array_stream_bin, _rows_affected} = Arrow.adbc_example
 {:ok,
- <<246, 61, 104, 7, 1, 0, 0, 0, 251, 61, 104, 7, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-   0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-   ...>>,
- <<4, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0,
-   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 248, 3, 238, 56, 1, 0, 0, ...>>}
+ <<28, 98, 183, 18, 1, 0, 0, 0, 60, 91, 183, 18, 1, 0, 0, 0, 56, 80, 183, 18,
+   1, 0, 0, 0, 60, 98, 183, 18, 1, 0, 0, 0, 0, 154, 0, 16, 1, 0, 0, 0>>, -1}
 ```
 
 ## Installation
