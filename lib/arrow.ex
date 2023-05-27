@@ -29,7 +29,7 @@ defmodule Arrow do
     :ok = Statement.prepare(statement)
     statement_ptr = Adbc.Statement.get_pointer(statement)
 
-    Arrow.Nif.arrow_execute_query_example(func_ptr, statement_ptr)
+    Arrow.Nif.arrow_execute_query_example(func_ptr, statement_ptr, statement.reference)
   end
 
   # @spec int64_example :: {:ok, reference()} | {:error, String.t()}

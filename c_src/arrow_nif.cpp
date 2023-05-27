@@ -506,7 +506,7 @@ static int on_upgrade(ErlNifEnv *, void **, void **, ERL_NIF_TERM) {
 }
 
 static ErlNifFunc nif_functions[] = {
-  {"arrow_execute_query_example", 2, arrow_execute_query_example, 0}
+  {"arrow_execute_query_example", 3, arrow_execute_query_example, 0}
   // {"arrow_int64_example", 0, arrow_int64_example, 0},
   // {"arrow_utf8_example", 0, arrow_utf8_example, 0},
   // {"arrow_to_arrow_c_data", 1, arrow_to_arrow_c_data, ERL_NIF_DIRTY_JOB_CPU_BOUND},

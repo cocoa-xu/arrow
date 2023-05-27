@@ -12,7 +12,7 @@ defmodule Arrow.Nif do
     end
   end
 
-  def arrow_execute_query_example(_func, _statement), do: :erlang.nif_error(:not_loaded)
+  def arrow_execute_query_example(_func, _statement, _ref), do: :erlang.nif_error(:not_loaded)
 
   # def arrow_int64_example(), do: :erlang.nif_error(:not_loaded)
 
