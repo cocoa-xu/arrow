@@ -33,6 +33,7 @@ defmodule Arrow.MixProject do
       {:elixir_make, "~> 0.7.0"},
 
       # adbc demo
+      # {:adbc, "~> 0.1", path: "../adbc"},
       {:adbc, "~> 0.1", github: "cocoa-xu/adbc"},
 
       # docs
@@ -51,7 +52,7 @@ defmodule Arrow.MixProject do
   defp package() do
     [
       name: "arrow",
-      files: ~w(3rd_party/arrow c_src lib mix.exs README* LICENSE* Makefile checksum.exs),
+      files: ~w(c_src lib mix.exs README* LICENSE* Makefile checksum.exs),
       licenses: ["Apache-2.0"],
       links: %{"GitHub" => @github_url}
     ]

@@ -407,6 +407,12 @@ static ERL_NIF_TERM arrow_execute_query_example(ErlNifEnv *env, int argc, const 
   }
   if (struct_ptr_u64 == 0) return enif_make_badarg(env);
 
+  uint64_t error_ptr_u64;
+  if (!erlang::nif::get(env, argv[2], &error_ptr_u64)) {
+    return enif_make_badarg(env);
+  }
+  if (error_ptr_u64 == 0) return enif_make_badarg(env);
+
   AdbcStatusCode(*remote_AdbcStatementExecuteQuery)(void *, struct ArrowArrayStream *, int64_t*, void *) = nullptr;
   remote_AdbcStatementExecuteQuery = reinterpret_cast<decltype(remote_AdbcStatementExecuteQuery)>(ptr_u64);
   
@@ -419,12 +425,7 @@ static ERL_NIF_TERM arrow_execute_query_example(ErlNifEnv *env, int argc, const 
   
   int64_t rows_affected;
 
-  ErlNifBinary errorbin;
-  if (!enif_alloc_binary(sizeof(struct ArrowArrayStream), &errorbin)) {
-    enif_release_binary(&outbin);
-    return erlang::nif::error(env, "out of memory");
-  }
-  struct AdbcError * adbc_error = (struct AdbcError *)errorbin.data;
+  struct AdbcError * adbc_error = (struct AdbcError *)(uint64_t *)error_ptr_u64;
   memset(adbc_error, 0, sizeof(struct AdbcError));
 
   AdbcStatusCode code = remote_AdbcStatementExecuteQuery((void *)(uint64_t *)struct_ptr_u64, out, &rows_affected, adbc_error);
@@ -434,10 +435,8 @@ static ERL_NIF_TERM arrow_execute_query_example(ErlNifEnv *env, int argc, const 
     if (adbc_error->release != nullptr) {
       adbc_error->release(adbc_error);
     }
-    enif_release_binary(&errorbin);
     return ret;
   }
-  enif_release_binary(&errorbin);
 
   ret = enif_make_binary(env, &outbin);
   return enif_make_tuple3(env,
@@ -506,7 +505,7 @@ static int on_upgrade(ErlNifEnv *, void **, void **, ERL_NIF_TERM) {
 }
 
 static ErlNifFunc nif_functions[] = {
-  {"arrow_execute_query_example", 3, arrow_execute_query_example, 0}
+  {"arrow_execute_query_example", 4, arrow_execute_query_example, 0}
   // {"arrow_int64_example", 0, arrow_int64_example, 0},
   // {"arrow_utf8_example", 0, arrow_utf8_example, 0},
   // {"arrow_to_arrow_c_data", 1, arrow_to_arrow_c_data, ERL_NIF_DIRTY_JOB_CPU_BOUND},
