@@ -48,7 +48,7 @@ defmodule Arrow do
         statement_ptr,
         array_stream_ptr,
         error.pointer,
-        {statement.reference, error.reference}
+        {statement.reference, error.reference, array_stream.reference}
       )
 
     {array_stream, rows_affected}
