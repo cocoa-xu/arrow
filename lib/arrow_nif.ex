@@ -12,13 +12,15 @@ defmodule Arrow.Nif do
     end
   end
 
-  def arrow_int64_example(), do: :erlang.nif_error(:not_loaded)
+  def arrow_execute_query_example(_func, _statement), do: :erlang.nif_error(:not_loaded)
 
-  def arrow_utf8_example(), do: :erlang.nif_error(:not_loaded)
+  # def arrow_int64_example(), do: :erlang.nif_error(:not_loaded)
 
-  def arrow_to_arrow_c_data(_data), do: :erlang.nif_error(:not_loaded)
+  # def arrow_utf8_example(), do: :erlang.nif_error(:not_loaded)
 
-  def arrow_invoke_invoke_my_add(_ptr, _a, _b), do: :erlang.nif_error(:not_loaded)
+  # def arrow_to_arrow_c_data(_data), do: :erlang.nif_error(:not_loaded)
 
-  def arrow_invoke_invoke_my_op(_ptr, _s), do: :erlang.nif_error(:not_loaded)
+  # def arrow_invoke_invoke_my_add(_ptr, _a, _b), do: :erlang.nif_error(:not_loaded)
+
+  # def arrow_invoke_invoke_my_op(_ptr, _s), do: :erlang.nif_error(:not_loaded)
 end

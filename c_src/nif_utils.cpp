@@ -49,6 +49,11 @@ ERL_NIF_TERM error(ErlNifEnv *env, const char *msg) {
     }
 }
 
+ERL_NIF_TERM error(ErlNifEnv *env, ERL_NIF_TERM term) {
+    ERL_NIF_TERM error_atom = atom(env, "error");
+    return enif_make_tuple2(env, error_atom, term);
+}
+
 // Helper for returning `{:ok, term}` from NIF.
 ERL_NIF_TERM ok(ErlNifEnv *env) {
     return atom(env, "ok");
@@ -336,6 +341,18 @@ ERL_NIF_TERM make_binary(ErlNifEnv *env, const char *c_string) {
     size_t len = strlen(c_string);
     if ((ptr = enif_make_new_binary(env, len, &binary_str)) != nullptr) {
         memcpy((char *)ptr, c_string, len);
+        return binary_str;
+    } else {
+        fprintf(stderr, "internal error: cannot allocate memory for binary string\r\n");
+        return atom(env, "error");
+    }
+}
+
+ERL_NIF_TERM make_binary(ErlNifEnv *env, const char *c_string, size_t length) {
+    ERL_NIF_TERM binary_str;
+    unsigned char *ptr;
+    if ((ptr = enif_make_new_binary(env, length, &binary_str)) != nullptr) {
+        memcpy((char *)ptr, c_string, length);
         return binary_str;
     } else {
         fprintf(stderr, "internal error: cannot allocate memory for binary string\r\n");

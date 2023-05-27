@@ -23,6 +23,7 @@ ERL_NIF_TERM atom(ErlNifEnv *env, const char *msg);
 
 // Helper for returning `{:error, msg}` from NIF.
 ERL_NIF_TERM error(ErlNifEnv *env, const char *msg);
+ERL_NIF_TERM error(ErlNifEnv *env, ERL_NIF_TERM term);
 
 // Helper for returning `{:ok, term}` from NIF.
 ERL_NIF_TERM ok(ErlNifEnv *env);
@@ -180,6 +181,7 @@ int make(ErlNifEnv *env, const std::vector<std::string>& array, ERL_NIF_TERM &ou
 int make(ErlNifEnv *env, const std::vector<const std::string*>& array, ERL_NIF_TERM &out);
 
 ERL_NIF_TERM make_binary(ErlNifEnv *env, const char *c_string);
+ERL_NIF_TERM make_binary(ErlNifEnv *env, const char *c_string, size_t length);
 ERL_NIF_TERM make_binary(ErlNifEnv *env, const std::string& string);
 
 template <typename Key, typename Value>
