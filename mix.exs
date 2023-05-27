@@ -32,9 +32,9 @@ defmodule Arrow.MixProject do
       {:cc_precompiler, "~> 0.1.0"},
       {:elixir_make, "~> 0.7.0"},
 
-      # adbc demo
-      # {:adbc, "~> 0.1", path: "../adbc"},
+      # demo
       {:adbc, "~> 0.1", github: "cocoa-xu/adbc"},
+      {:rust_c_fn, "~> 0.1", github: "cocoa-xu/rust_c_fn"},
 
       # docs
       {:ex_doc, "~> 0.29", only: :docs, runtime: false}

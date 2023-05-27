@@ -6,10 +6,9 @@ defmodule Arrow do
   alias Adbc.Database
   alias Adbc.Connection
   alias Adbc.Statement
-  alias Adbc.ArrowArrayStream
 
-  @spec adbc_example :: {:ok, reference()} | {:error, String.t()}
-  def adbc_example() do
+  @spec adbc_c_example :: {:ok, reference(), integer()} | {:error, String.t()}
+  def adbc_c_example() do
     {:ok, database} = Database.new()
     :ok = Database.set_option(database, "driver", "adbc_driver_sqlite")
     :ok = Database.set_option(database, "uri", "file:my_db.db")
@@ -25,16 +24,13 @@ defmodule Arrow do
     statement_ptr = Adbc.Statement.get_pointer(statement)
 
     {:ok, error} = Adbc.Error.new()
-    {:ok, array_stream} = ArrowArrayStream.new()
-    array_stream_ptr = array_stream.pointer
 
-    {:ok, ^array_stream_ptr, _rows_affected} =
+    {:ok, _array_stream, _rows_affected} =
       Arrow.Nif.arrow_execute_query_example(
         func_ptr,
         statement_ptr,
-        array_stream_ptr,
         error.pointer,
-        {statement.reference, error.reference, array_stream.reference}
+        {statement.reference, error.reference}
       )
 
     Statement.set_sql_query(statement, "INSERT INTO foo VALUES (#{:rand.uniform(1000)})")
@@ -42,48 +38,53 @@ defmodule Arrow do
     statement_ptr = Adbc.Statement.get_pointer(statement)
 
     :ok = Adbc.Error.reset(error)
-    {:ok, ^array_stream_ptr, rows_affected} =
+    {:ok, array_stream, rows_affected} =
       Arrow.Nif.arrow_execute_query_example(
         func_ptr,
         statement_ptr,
-        array_stream_ptr,
         error.pointer,
-        {statement.reference, error.reference, array_stream.reference}
+        {statement.reference, error.reference}
       )
 
     {array_stream, rows_affected}
   end
 
-  # @spec int64_example :: {:ok, reference()} | {:error, String.t()}
-  # def int64_example do
-  #   Arrow.Nif.arrow_int64_example()
-  # end
+  @spec adbc_rust_example :: {:ok, reference(), integer()} | {:error, String.t()}
+  def adbc_rust_example() do
+    {:ok, database} = Database.new()
+    :ok = Database.set_option(database, "driver", "adbc_driver_sqlite")
+    :ok = Database.set_option(database, "uri", "file:my_db.db")
+    :ok = Database.init(database)
+    {:ok, connection} = Connection.new()
+    :ok = Connection.init(connection, database)
+    {:ok, statement} = Statement.new(connection)
 
-  # @spec utf8_example :: {:ok, reference()} | {:error, String.t()}
-  # def utf8_example do
-  #   Arrow.Nif.arrow_utf8_example()
-  # end
+    func_ptr = Adbc.get_function_pointer("AdbcStatementExecuteQuery")
 
-  # @spec to_arrow_c_data(reference()) :: {:ok, binary(), binary()} | {:error, String.t()}
-  # def to_arrow_c_data(data) do
-  #   Arrow.Nif.arrow_to_arrow_c_data(data)
-  # end
+    Statement.set_sql_query(statement, "CREATE TABLE IF NOT EXISTS foo (col)")
+    :ok = Statement.prepare(statement)
+    statement_ptr = Adbc.Statement.get_pointer(statement)
 
-  # @spec invoke_my_add(integer(), integer()) :: integer()
-  # def invoke_my_add(a, b) do
-  #   Arrow.Nif.arrow_invoke_invoke_my_add(CFunc.pointer_to_my_add(), a, b)
-  # end
+    {:ok, error} = Adbc.Error.new()
 
-  # @spec invoke_my_op(:add | :subtract | :multiply | :divide, integer(), integer()) :: integer()
-  # def invoke_my_op(mode, a, b) when mode == :add or mode == :subtract or mode == :multiply or mode == :divide do
-  #   s = CFunc.new_struct(mode, a, b)
-  #   result = Arrow.Nif.arrow_invoke_invoke_my_op(CFunc.pointer_to_my_op(), s)
-  #   CFunc.free_struct(s)
-  #   result
-  # end
+    {_array_stream, _rows_affected} =
+      RustNIF.rust_adbc_statement_execute_query(
+        func_ptr,
+        statement_ptr,
+        error.pointer,
+        {statement.reference, error.reference}
+      )
 
-  # @spec invoke_my_add_rs(integer(), integer()) :: integer()
-  # def invoke_my_add_rs(a, b) do
-  #   Arrow.Nif.arrow_invoke_invoke_my_add(RustNIF.pointer_to_my_add_rs(), a, b)
-  # end
+    Statement.set_sql_query(statement, "INSERT INTO foo VALUES (#{:rand.uniform(1000)})")
+    :ok = Statement.prepare(statement)
+    statement_ptr = Adbc.Statement.get_pointer(statement)
+
+    :ok = Adbc.Error.reset(error)
+    RustNIF.rust_adbc_statement_execute_query(
+      func_ptr,
+      statement_ptr,
+      error.pointer,
+      {statement.reference, error.reference}
+    )
+  end
 end

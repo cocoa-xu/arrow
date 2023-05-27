@@ -58,7 +58,44 @@ struct NifResArrowData {
   }
 };
 
+struct NifResArrowArrayStream {
+  struct ArrowArrayStream * stream;
+
+  static ErlNifResourceType * type;
+  static NifResArrowArrayStream * allocate_resource(ErlNifEnv * env, ERL_NIF_TERM &error) {
+    NifResArrowArrayStream * res = (NifResArrowArrayStream *)enif_alloc_resource(NifResArrowArrayStream::type, sizeof(NifResArrowArrayStream));
+    if (res == nullptr) {
+      error = erlang::nif::error(env, "cannot allocate NifResArrowArrayStream resource");
+      return res;
+    }
+
+    return res;
+  }
+
+  static NifResArrowArrayStream * get_resource(ErlNifEnv * env, ERL_NIF_TERM term, ERL_NIF_TERM &error) {
+    NifResArrowArrayStream * self_res = nullptr;
+    if (!enif_get_resource(env, term, NifResArrowArrayStream::type, (void **)&self_res) || self_res == nullptr || self_res->stream == nullptr) {
+        error = erlang::nif::error(env, "cannot access NifResArrowArrayStream resource");
+    }
+    return self_res;
+  }
+
+  static void destruct_resource(ErlNifEnv *env, void *args) {
+    auto res = (NifResArrowArrayStream *)args;
+    if (res) {
+      if (res->stream) {
+        if (res->stream->release) {
+          res->stream->release(res->stream);
+        }
+        enif_free(res->stream);
+        res->stream = nullptr;
+      }
+    }
+  }
+};
+
 ErlNifResourceType * NifResArrowData::type = nullptr;
+ErlNifResourceType * NifResArrowArrayStream::type = nullptr;
 
 static void release_schema(struct ArrowSchema* schema) {
   if (schema->release == NULL) return;
@@ -393,7 +430,7 @@ static ERL_NIF_TERM nif_error_from_adbc_error(ErlNifEnv *env, struct AdbcError *
 }
 
 static ERL_NIF_TERM arrow_execute_query_example(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
-  ERL_NIF_TERM ret;
+  ERL_NIF_TERM ret, error;
 
   uint64_t ptr_u64;
   if (!erlang::nif::get(env, argv[0], &ptr_u64)) {
@@ -407,14 +444,8 @@ static ERL_NIF_TERM arrow_execute_query_example(ErlNifEnv *env, int argc, const 
   }
   if (stmt_ptr_u64 == 0) return enif_make_badarg(env);
 
-  uint64_t array_stream_ptr_u64;
-  if (!erlang::nif::get(env, argv[2], &array_stream_ptr_u64)) {
-    return enif_make_badarg(env);
-  }
-  if (array_stream_ptr_u64 == 0) return enif_make_badarg(env);
-
   uint64_t error_ptr_u64;
-  if (!erlang::nif::get(env, argv[3], &error_ptr_u64)) {
+  if (!erlang::nif::get(env, argv[2], &error_ptr_u64)) {
     return enif_make_badarg(env);
   }
   if (error_ptr_u64 == 0) return enif_make_badarg(env);
@@ -424,26 +455,42 @@ static ERL_NIF_TERM arrow_execute_query_example(ErlNifEnv *env, int argc, const 
   
   int64_t rows_affected;
 
+  NifResArrowArrayStream * stream_out = nullptr;
+  if ((stream_out = NifResArrowArrayStream::allocate_resource(env, error)) == nullptr) {
+    return error;
+  }
+
+  stream_out->stream = (struct ArrowArrayStream *)enif_alloc(sizeof(struct ArrowArrayStream));
+  if (stream_out->stream == nullptr) {
+    return erlang::nif::error(env, "out of memory");
+  }
+  struct ArrowArrayStream * out = stream_out->stream;
+  memset(out, 0, sizeof(struct ArrowArrayStream));
+
   struct AdbcError * adbc_error = (struct AdbcError *)(uint64_t *)error_ptr_u64;
   memset(adbc_error, 0, sizeof(struct AdbcError));
 
   AdbcStatusCode code = remote_AdbcStatementExecuteQuery(
     (void *)(uint64_t *)stmt_ptr_u64, 
-    (void *)(uint64_t *)array_stream_ptr_u64, 
+    (void *)(uint64_t *)out,
     &rows_affected,
     adbc_error
   );
   if (code != ADBC_STATUS_OK) {
     ret = nif_error_from_adbc_error(env, adbc_error);
+    enif_free((void *)stream_out->stream);
+    enif_release_resource(stream_out);
     if (adbc_error->release != nullptr) {
       adbc_error->release(adbc_error);
     }
     return ret;
   }
 
+  ret = enif_make_resource(env, stream_out);
+  enif_release_resource(stream_out);
   return enif_make_tuple3(env,
     erlang::nif::ok(env),
-    argv[2],
+    ret,
     enif_make_int64(env, rows_affected)
   );
 }
@@ -454,6 +501,10 @@ static int on_load(ErlNifEnv *env, void **, ERL_NIF_TERM) {
   rt = enif_open_resource_type(env, "Elixir.Arrow.Nif", "NifResArrowData", NifResArrowData::destruct_resource, ERL_NIF_RT_CREATE, NULL);
   if (!rt) return -1;
   NifResArrowData::type = rt;
+
+  rt = enif_open_resource_type(env, "Elixir.Arrow.Nif", "NifResArrowArrayStream", NifResArrowArrayStream::destruct_resource, ERL_NIF_RT_CREATE, NULL);
+  if (!rt) return -1;
+  NifResArrowArrayStream::type = rt;
   
   return 0;
 }
@@ -467,7 +518,7 @@ static int on_upgrade(ErlNifEnv *, void **, void **, ERL_NIF_TERM) {
 }
 
 static ErlNifFunc nif_functions[] = {
-  {"arrow_execute_query_example", 5, arrow_execute_query_example, 0}
+  {"arrow_execute_query_example", 4, arrow_execute_query_example, 0}
 };
 
 ERL_NIF_INIT(Elixir.Arrow.Nif, nif_functions, on_load, on_reload, on_upgrade, NULL);
